@@ -1,0 +1,7 @@
+opencv-python
+numpy
+imagehash
+Pillow
+requests
+python-dotenv
+tqdm 
