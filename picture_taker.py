@@ -2,10 +2,18 @@ import cv2
 import os
 import re
 
-save_dir = 'card_pictures'
-os.makedirs(save_dir, exist_ok=True)
+SAVE_DIR = 'card_pictures'
+
+def create_save_directory(folder):
+    '''
+    Creates save directory for images
+    '''
+    os.makedirs(folder, exist_ok=True)
 
 def get_next_image_number(folder):
+    '''
+    Obtain next image number based on last image number in folder
+    '''
     image_files = os.listdir(folder)
     numbers = []
     pattern = re.compile(r'^card_(\d+)\.png$')
@@ -13,38 +21,52 @@ def get_next_image_number(folder):
         match = pattern.match(filename)
         if match:
             numbers.append(int(match.group(1)))
-
     return max(numbers) + 1 if numbers else 0
 
-img_counter = get_next_image_number(save_dir)
+def initialize_camera():
+    '''
+    Camera startup
+    '''
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        raise RuntimeError("Error: Cannot open webcam")
+    return cap
 
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    print("Error: Cannot open webcam")
-    exit()
+def capture_images(cap, folder, start_counter):
+    '''
+    Capture and save image in specified directory
+    '''
+    img_counter = start_counter
+    print("Press 's' to save an image, 'q' to quit.")
 
-print("Press 's' to save an image, 'q' to quit.")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Failed to grab frame")
+            break
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Error: Failed to grab frame")
-        break
+        cv2.imshow("Webcam - Press 's' to save", frame)
+        key = cv2.waitKey(1) & 0xFF
 
-    cv2.imshow("Webcam - Press 's' to save", frame)
+        if key == ord('s'):
+            img_name = f"card_{img_counter}.png"
+            img_path = os.path.join(folder, img_name)
+            cv2.imwrite(img_path, frame)
+            print(f"Saved {img_path}")
+            img_counter += 1
 
-    key = cv2.waitKey(1) & 0xFF
+        elif key == ord('q'):
+            print("Quitting.")
+            break
 
-    if key == ord('s'):
-        img_name = f"card_{img_counter}.png"
-        img_path = os.path.join(save_dir, img_name)
-        cv2.imwrite(img_path, frame)
-        print(f"Saved {img_path}")
-        img_counter += 1
+    cap.release()
+    cv2.destroyAllWindows()
 
-    elif key == ord('q'):
-        print("Quitting.")
-        break
+def main():
+    create_save_directory(SAVE_DIR)
+    start_counter = get_next_image_number(SAVE_DIR)
+    cap = initialize_camera()
+    capture_images(cap, SAVE_DIR, start_counter)
 
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    main()
